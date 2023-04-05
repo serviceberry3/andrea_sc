@@ -213,13 +213,15 @@ SynthDef(\wood_block, { arg wdv=30, freq=850, swing=1.5, ampl=0.5, out=0;
 
 	main = ((LFSaw.ar(1, pi, 1, 0).neg ** (swing)) + 1) / 2;
 
-	wd = (Resonz.ar(main, freq, 0.04, wdv) /*+ SinOsc.ar(800)*/) * EnvGen.kr(env, doneAction: 2);
+	wd = (Resonz.ar(main, freq, 0.04, wdv) + SinOsc.ar(800)) * EnvGen.kr(env, doneAction: 2);
 
-	Out.ar(out, LeakDC.ar(wd ! 2) * ampl);
+	s = FreeVerb.ar(wd, 0.33, 0.9);
+
+	Out.ar(out, LeakDC.ar(s ! 2) * ampl);
 }).add;
 
 
-SynthDef(\fady, { | out = 0, ampl = 1, freq = 440, partials = #[324, 504, 666, 838], gate = 1 |
+SynthDef(\fady_fm, { | out = 0, ampl = 1, freq = 440, partials = #[324, 504, 666, 838], gate = 1 |
 	//carrier amplitudes
 	var amps = [1, 1, 1, 1].normalizeSum; //makes these ampls sum to 1
 
@@ -247,77 +249,25 @@ SynthDef(\fady, { | out = 0, ampl = 1, freq = 440, partials = #[324, 504, 666, 8
 
 
 
-SynthDef(\fady_add_aflat, { | out=0, freq = 52, loudness = 0.5, dur = 3.0, pan = 0.0, attackTime = 0.3, releaseTime = 0.9, gate = 1 |
-	var partials, amplSpect, numPartials, partialFreqNoises, partialAmplNoises;
+SynthDef(\fady, { | out=0, freq = 52, loudness = 0.5, dur = 3.0, pan = 0.0, attackTime = 0.3, releaseTime = 0.9, gate = 1, freqs = #[53, 82, 106, 280, 334, 420, 497, 563, 672, 845, 1005, 1262, 1491, 1670], amplSpect = #[-64.1, -68.8, -28.5, -30.7, -32.6, -34.7, -38.8, -37.1, -37.5, -75.2, -76.9, -74.3, -72.4] |
+	var numPartials, partialFreqNoises, partialAmplNoises;
 
-	partials = #[1, 1.55, 3.11, 4.75, 5.38, 6.38, 8.05, 9.5, 10.75, 12.8, 16];
-	amplSpect = #[-66.5, -63.3, -65.3, -34.4, -31.7, -29.2, -33.5, -35, -37.8, -36.7, -35.5];
-
-	//number of total partials we have
-	numPartials = partials.size;
-
-	//fill an array with some LFNoise1 objects to slightly vary each of the partials' frequencies over time
-	partialFreqNoises = Array.fill(numPartials, { |i|
-		LFNoise1.kr(3, 3); //multiplier of 2 sounds pretty good
-	}
-	);
-
-	//fill yet another array with some more LFNoise1 objects to slightly vary each of the partials' amplitudes over time
-	//fill an array with some LFNoise1 objects to slightly vary each of the partials' frequencies over time
-	partialAmplNoises = Array.fill(numPartials, { |i|
-		LFNoise1.kr(3, 0.2); //multiplier of 2 sounds pretty good
-	}
-	);
-
-	//compute all of the partial freqs using the fund freq
-	f = freq * partials;
-
-	//convert db to amplitudes
-	a = 10.pow(amplSpect / 20);
-
-	//main UGen stuff
-	//line env args: attacktime, sustaintime, releasetime, level (of sustain portion), curve
-	b = Pan2.ar( //pan to position (user-passed arg)
-		Mix( //mix down to single channel
-			SinOsc.ar(freq: f + partialFreqNoises,
-				mul: (a * loudness) + partialAmplNoises),
-			pan));
-
-	c = LPF.ar(BBandStop.ar(HPF.ar(b + BPF.ar(PinkNoise.ar(), 25, 1) ! 2, 150), freq: 25, bw: 10), 400);
-
-	e = EnvGen.kr(Env.adsr(0.2, 0.1, 1, 0.8, 1, \sin), doneAction: 2, gate: gate);
-
-	s = FreeVerb.ar(c, 0.33, 0.8);
-
-	Out.ar(out, s * e);
-}).add;
-
-
-
-SynthDef(\fady_add_e, { | out=0, freq, loudness = 0.5, dur = 3.0, pan = 0.0, attackTime = 0.3, releaseTime = 0.9, gate=1 |
-	var freqs, partials, amplSpect, numPartials, partialFreqNoises, partialAmplNoises;
-
-	freqs = #[70, 128, 183, 220, 276, 329, 370, 439, 556, 660, 832, 989, 1119, 1660];
-	amplSpect = #[-66.9, -61, -37.4, -28, -29.8, -25.9, -37.9, -36.5, -40.8, -35.5, -62, -61.4, -62.5, -71.1];
 
 	//number of total partials we have
 	numPartials = freqs.size;
 
 	//fill an array with some LFNoise1 objects to slightly vary each of the partials' frequencies over time
 	partialFreqNoises = Array.fill(numPartials, { |i|
-		LFNoise1.kr(3, 3); //multiplier of 2 sounds pretty good
+		LFNoise1.kr(10, 5);
 	}
 	);
 
 	//fill yet another array with some more LFNoise1 objects to slightly vary each of the partials' amplitudes over time
 	//fill an array with some LFNoise1 objects to slightly vary each of the partials' frequencies over time
 	partialAmplNoises = Array.fill(numPartials, { |i|
-		LFNoise1.kr(3, 0.2); //multiplier of 2 sounds pretty good
+		LFNoise1.kr(10, 0.5); //multiplier of 2 sounds pretty good
 	}
 	);
-
-	//compute all of the partial freqs using the fund freq
-	f = freqs;
 
 	//convert db to amplitudes
 	a = 10.pow(amplSpect / 20);
@@ -326,17 +276,25 @@ SynthDef(\fady_add_e, { | out=0, freq, loudness = 0.5, dur = 3.0, pan = 0.0, att
 	//line env args: attacktime, sustaintime, releasetime, level (of sustain portion), curve
 	b = Pan2.ar( //pan to position (user-passed arg)
 		Mix( //mix down to single channel
-			SinOsc.ar(freq: f + partialFreqNoises,
-				mul: (a * loudness) + partialAmplNoises),
+			SinOsc.ar(freq: freqs + partialFreqNoises, mul: a + partialAmplNoises),
 			pan));
 
-	c = LPF.ar(BBandStop.ar(HPF.ar(b + BPF.ar(PinkNoise.ar(), 25, 1) ! 2, 150), freq: 25, bw: 10), 400);
+	//to try to better mimic freqscope of original, I made some PinkNoise and filtered it until I saw the flat low-freq tail around -70 dB that's present on the original. I added this to the rest of signal
+	//wrapped it in BandStop filter because the low-freq tail ampl was too big
+	c = BBandStop.ar(HPF.ar(b + BPF.ar(PinkNoise.ar(), 25, 1) ! 2, 150), freq: 25, bw: 10);
+
+	//hella high-order lowpass filter to really cut out a lot of the high-freq components (which is necessary based on freqscope of original)
+	d = LPF.ar(LPF.ar(LPF.ar(LPF.ar(LPF.ar(LPF.ar(LPF.ar(LPF.ar(c, 800), 800), 800), 800), 800), 800), 800), 800);
 
 	e = EnvGen.kr(Env.adsr(0.2, 0.1, 1, 0.8, 1, \sin), doneAction: 2, gate: gate);
-	s = FreeVerb.ar(c, 0.33, 0.8);
 
-	Out.ar(out, s * e);
+	s = FreeVerb.ar(d, 0.33, 0.8);
+
+	Out.ar(out, s * e * loudness);
 }).add;
+
+
+
 
 
 SynthDef(\maraca, { | out = 0, freq = 400 |
@@ -382,10 +340,39 @@ SynthDef(\marimba1, {
 
 	Out.ar(out, Pan2.ar(snd, pan));
 }).add;
+
+
+
+SynthDef(\bass_stringy, { | out = 0, ampl = 1, freq = 69.30, partials = #[324, 504, 666, 838], gate = 1  |
+	//carrier amplitudes
+	var amps = [1, 1, 1, 1].normalizeSum; //makes these ampls sum to 1
+
+	//the modulator
+	var mod = SinOsc.ar(freq, mul: 500);
+
+	//the 3 carriers
+	var car1 = SinOsc.ar(freq*1 + mod, mul: amps[0]) * LFNoise1.kr(10, 1);
+	var car2 = SinOsc.ar(freq*2 + mod, mul: amps[1]) * LFNoise1.kr(10, 1);
+	var car3 = SinOsc.ar(freq*3 + mod, mul: amps[2]) * LFNoise1.kr(10, 1);
+	var car4 = SinOsc.ar(freq*4 + mod, mul: amps[3]) * LFNoise1.kr(10, 1);
+
+	var env;
+
+	s = car1 + car2 + car3 + car4;
+
+	e = EnvGen.kr(Env.perc(0.01, 0.4, 1, \sin), doneAction: 2, gate: gate);
+
+
+	//adsr args: attacktime, decaytime, sustainlvl (fraction of peak lvl), releasetime, peaklevel, curve
+	Out.ar(out, s * ampl * e ! 2);
+}).add;
+
 )
 
 Env.linen().plot;
 Env.perc(0.01, 0.3, 1, \sin).plot;
+
+
 
 //Env.new args: values (levels) array, time array, curve array (affects concave vs. convex vs. flat)
 Env.new([0, 1, 0], [0.6, 0.6], [3, -3]).plot;
@@ -402,15 +389,24 @@ Synth(\wood_block);
 Synth(\maraca);
 Synth(\fady);
 Synth(\fady_add_aflat);
-Synth(\fady_add_e);
+Synth(\bass_stringy, [\freq, 30]);
 
-f = Pbind(\instrument, \fady_add_aflat, \freq, 52);
-f.play;
 
-{LFNoise1.kr(3, 0.1).poll}.play;
+/*play {BBandStop.ar(HPF.ar(BPF.ar(PinkNoise.ar(), 25, 0.1) ! 2, 150), freq: 25, bw: 10)};
 
-//e = Pbind(\instrument, \fady_add_e, \gate, Pseq([1, 0], 1), \dur, Pseq([8.5, 1], 1));
-//e.play;
+play {BPF.ar(PinkNoise.ar(), 25, 0.1) ! 2};
+play {HPF.ar(BPF.ar(PinkNoise.ar(), 25, 0.1) ! 2, 150)};*/
+
+
+~fady_aflat_freqs_v2 = [52, 81, 162, 247, 280, 332, 419, 496, 559, 666, 830, 52, 81, 162];
+~fady_aflat_ampls_v2 = #[-66.5, -63.3, -65.3, -34.4, -31.7, -29.2, -33.5, -35, -37.8, -36.7, -35.5, -66.5, -63.3, -65.3];
+
+
+
+
+Synth(\fady_add_aflat, [\freqs, ~fady_aflat_freqs_v2, \amplSpect, ~fady_aflat_ampls_v2]);
+Synth(\fady_add_aflat, [\freqs, ~fady_aflat_freqs, \amplSpect, ~fady_aflat_ampls]);
+Synth(\fady_add_aflat, [\freqs, ~fady_gflat_freqs, \amplSpect, ~fady_gflat_ampls]);
 
 
 
@@ -428,18 +424,34 @@ b.play;
 
 
 
-
-
 //PLAY THE COMPOSITION -- ANDREA BY BAD BUNNY, MODELED BY NOAH S WEINER
 (
-
-
 ~bpm = 103; // Andrea runs at 103 bpm
 ~tc = TempoClock(~bpm / 60); // make a new tempoclock at tempo 103 bpm, but need to get beats per second
 
+
+
+//partials and stuff for additive synthesis
+~fady_e_freqs = [70, 128, 183, 220, 276, 329, 370, 439, 556, 660, 832, 989, 1119, 1660];
+~fady_e_ampls = [-66.9, -61, -37.4, -28, -29.8, -25.9, -37.9, -36.5, -40.8, -35.5, -62, -61.4, -62.5, -71.1];
+
+
+~fady_gflat_freqs = [63, 138, 210, 247, 312, 373, 424, 497, 627, 749, 985, 1109, 1234, 1484];
+~fady_gflat_ampls = [-66.2, -64.8, -35.6, -30.2, -31.1, -26.9, -41.7, -37.5, -33.4, -36.9, -61.5, -62.4, -58.4, -63.6];
+
+~fady_aflat_freqs = [53, 82, 106, 280, 334, 420, 497, 563, 672, 845, 1005, 1262, 1491, 1670];
+~fady_aflat_ampls = [-64.1, -68.8, -28.5, -30.7, -32.6, -34.7, -38.8, -37.1, -37.5, -75.2, -76.9, -74.3, -72.4];
+
+//other info
+~aflat1 = 51.91;
+~dflat1 = 69.30;
+~dflat0 = 30;
+
+
+
 //background synth note seq: 311.13 (Eflat4), 329.63 (E4), 415.30 (Aflat4), 311.13, 329.63, 277.18 (Dflat4),... repeats
 ~baying = { | note1=0.35, rest1=0.4, note2=0.35, rest2=0.4, note3=0.35, rest3=0.2 |
-	Pbind(\instrument, \sin, \freq, Pseq([311.13, Rest(), 329.63, Rest(), 415.30, Rest(), 311.13, Rest(), 329.63, Rest(), 277.18], 1), \ampl, Pseq([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], 1), \dur, Pseq([note1, rest1, note2, rest2, note3, rest3, 0.3, 0.4, 0.3, 0.4, 0.01], 1));
+	Pbind(\instrument, \sin, \freq, Pseq([311.13, Rest(), 329.63, Rest(), 415.30, Rest(), 311.13, Rest(), 329.63, Rest(), 277.18], 1), \ampl, 0.1, \dur, Pseq([note1, rest1, note2, rest2, note3, rest3, 0.3, 0.4, 0.3, 0.4, 0.01], 1));
 };
 
 
@@ -452,21 +464,30 @@ s = Pbind(\instrument, \sd, \ampl, 0.3, \freq, Pseq([250], 1));
 //wood block
 w = Pbind(\instrument, \wood_block, \ampl, 0.5, \freq, Pseq([850], 1));
 
-//fady synth
-a = Pbind(\instrument, \fady_add_aflat, \freq, 52, \gate, Pseq([1, 0], 1), \dur, Pseq([9.5, 1], 1));
-e = Pbind(\instrument, \fady_add_e, \gate, Pseq([1, 0], 1), \dur, Pseq([8.5, 1], 1));
+//fady synths
+a = Pbind(\instrument, \fady, \freqs, [~fady_aflat_freqs], \amplSpect, [~fady_aflat_ampls], \loudness, 0.1, \gate, Pseq([1, 0], 1), \dur, Pseq([9.5, 0.001], 1)); //this one is aflat
+e = Pbind(\instrument, \fady, \freqs, [~fady_e_freqs], \amplSpect, [~fady_e_ampls], \loudness, 0.1, \gate, Pseq([1, 0], 1), \dur, Pseq([9.5, 0.001], 1)); //this one is e
+g = Pbind(\instrument, \fady, \freqs, [~fady_gflat_freqs], \amplSpect, [~fady_gflat_ampls], \loudness, 0.1, \gate, Pseq([1, 0], 1), \dur, Pseq([9.5, 0.001], 1)); //this one is gflat
+
 
 //use Pattern class
 ~pat1 = Ptpar([0, ~baying.value(note1: 0.5, rest1: 0.6, note2: 0.35, rest2: 0.1), 0, k, 0.75, s, 1.5, s, 1, k, 2, k, 2.5, s, 3, k, 3.5, w, 3.75, w]);
 ~pat2 = Ptpar([0, ~baying.value(), 0, k, 0.75, s, 1.5, s, 1, k, 2, k, 2.5, s, 3, k, 3.5, w, 3.75, w]);
 
-~fady_pat = Ptpar([0, a, 8, e]);
+//fady synth pattern repeat throughout song
+~fady_pat = Ptpar([0, a, 8, e, 16, g, 24, e]);
 
-//Fady sequence: Aflat4 (415.30), E4 (329.63), Gflat4 (369.99)
-~test = Ptpar([0, ~pat1, 4, ~pat2]);
+//baying sequence rep throughout song: Aflat4 (415.30), E4 (329.63), Gflat4 (369.99)
+~baying_seq = Ptpar([0, ~pat1, 4, ~pat2]);
 
-~tc.sched(0, {~test.play(~tc); 8});
-~tc.sched(0, {~fady_pat.play(~tc); 16});
+//bass seq
+~bass_seq = Pbind(\instrument, \bass_stringy, \freq, Pseq([~dflat1, Rest(), ~dflat1, Rest(), ~dflat0, Rest(), ~aflat1, Rest(), ~dflat1, Rest(), ~dflat1, Rest(), ~dflat1], 1), \ampl, 0.5, \dur, Pseq([0.1, 0.6, 0.1, 2, 0.1, 0.4, 0.1, 0.4, 0.1, 0.6, 0.1, 0.6, 0.1], 1));
+
+~tc.sched(64, {~baying_seq.play(~tc); 8});
+~tc.sched(0, {~fady_pat.play(~tc); 32});
+~tc.sched(32, {~bass_seq.play(~tc); });
+
+//~bass_seq.play(~tc);/
 )
 
 
