@@ -12,6 +12,8 @@
 ▐░░░░░░░░░░░▌▐░▌       ▐░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌      ▐░░▌
  ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀        ▀▀  *ish*
 
+Student: Noah Weiner (nsw25)
+
 
 CPSC 432/532 Midterm Project Description 2021
 
@@ -89,10 +91,9 @@ Specific questions regarding this assignment should be posted to an appropriatel
 //The entirety of the song runs at 103 bpm.
 
 
-//INSTRUMENT DEFINITIONS
+//INSTRUMENT DEFINITIONS***************SYNTHDEFS****************************
 (
-//Env.new (or just Env()) args: values (levels) array, time array, curve array (affects concave vs. convex vs. flat)
-~env = Env.new([1, 0.0001], [0.8], \exp);
+//RECALL Env.new (or just Env()) args: values (levels) array, time array, curve array (affects concave vs. convex vs. flat)
 
 
 //kickdrum: (see 01:33 for good isolation of the kick) the one they use seems to have little tone
@@ -103,7 +104,7 @@ SynthDef(\kick, { | ampl = 1, freq = 70 |
     Out.ar(0, s ! 2);
 }).add;
 
-
+//bass drum (like kick)
 SynthDef(\bd, { | out=0, freq=100 |
 	var osc, env;
 	osc = FSinOsc.ar(freq);
@@ -112,7 +113,7 @@ SynthDef(\bd, { | out=0, freq=100 |
 }).add;
 
 
-//background "baying" synth
+//background "baying" synth, pretty pure sine
 SynthDef(\sin, { | ampl = 1, freq = 300 |
     //send the signal to the output bus '0'
 	//Env.perc args: attacktime, releasetime, peak level, curve
@@ -153,6 +154,7 @@ SynthDef(\kick2, { |freq=440, gate=1, amp=0.5, source,pan = 0.0 |
 }).add;
 
 
+
 SynthDef(\hat, { | out=0 |
 	var osc1, env;
 	osc1 = WhiteNoise.ar;
@@ -163,6 +165,7 @@ SynthDef(\hat, { | out=0 |
 
 SynthDef(\ringkick, { | freq = 40, decay = 0.25, amp = 1 |
 	var snd;
+
 	snd = Ringz.ar(
 		in: LPF.ar(
 			in: Impulse.ar(0),
@@ -170,16 +173,8 @@ SynthDef(\ringkick, { | freq = 40, decay = 0.25, amp = 1 |
 		freq: freq,
 		decaytime: decay,
 		mul: 7 * amp).tanh.sin*2;
-	Out.ar(0, snd ! 2);
-}).add;
 
-SynthDef(\marimba, { | freq = 440, amp = 0.4 |
-	var snd, env;
-	env = Env.linen(0.015, 1, 0.5, amp).kr(doneAction: 2);
-	snd = BPF.ar(Saw.ar(0), freq, 0.02);
-	snd = BLowShelf.ar(snd, 220, 0.81, 6);
-	snd = snd * env;
-	Out.ar(0, Splay.ar(snd));
+	Out.ar(0, snd ! 2);
 }).add;
 
 
@@ -205,8 +200,9 @@ SynthDef(\pong, { | freq = 400 |
 ).add;
 
 
+//woodblock instrument simulation
 //cred: http://sccode.org/1-5de/fork
-SynthDef(\wood_block, { | freq=850, wdv=30, swing=1.5, ampl=0.5, out=0 |
+SynthDef(\wood_block, { | freq=850, wdv=30, swing=1.5, loudness=0.5, out=0 |
 	var env, sig, main, wd;
 
 	env = Env.perc(0.01, 0.01, 1, \sin);
@@ -219,11 +215,12 @@ SynthDef(\wood_block, { | freq=850, wdv=30, swing=1.5, ampl=0.5, out=0 |
 	s = FreeVerb.ar(wd, 0.33, 0.9);
 
 	//LeakDC: remove super low-freq (~DC) content, so essentially a highpass filter
-	Out.ar(out, LeakDC.ar(s ! 2) * ampl);
+	Out.ar(out, LeakDC.ar(s ! 2) * loudness);
 }).add;
 
 
-//experiment with getting the wood block to reverb a bit
+//experiment with getting the wood block to reverb a bit?
+//much of this is taken from AllPass delay line examples we saw in class
 SynthDef(\wood_verb, { | freq=400, wdv=30, swing=1.5, ampl=0.5, out=0 |
 	var local, in, env, sig, main, wd, s;
 
@@ -272,7 +269,8 @@ SynthDef(\wood_verb, { | freq=400, wdv=30, swing=1.5, ampl=0.5, out=0 |
 }).add;
 
 
-
+//mysterious, sad synth that comes in right at the beginning. used additive synthesis since I had
+//clean samples of it
 SynthDef(\fady, { | out=0, freq = 52, loudness = 0.5, dur = 3.0, pan = 0.0, attackTime = 0.3, releaseTime = 0.9, gate = 1, freqs = #[53, 82, 106, 280, 334, 420, 497, 563, 672, 845, 1005, 1262, 1491, 1670], amplSpect = #[-64.1, -68.8, -28.5, -30.7, -32.6, -34.7, -38.8, -37.1, -37.5, -75.2, -76.9, -74.3, -72.4] |
 	var numPartials, partialFreqNoises, partialAmplNoises;
 
@@ -318,7 +316,7 @@ SynthDef(\fady, { | out=0, freq = 52, loudness = 0.5, dur = 3.0, pan = 0.0, atta
 }).add;
 
 
-
+//trying to make a maraca/shaker...but it's not very present in the song
 SynthDef(\maraca, { | out = 0, freq = 400 |
 	var noise1, noise2, env1, env2, env3, env4, env5;
 
@@ -338,6 +336,21 @@ SynthDef(\maraca, { | out = 0, freq = 400 |
 }).add;
 
 
+//****Various marimba implementations
+
+SynthDef(\marimba, { | freq = 440, amp = 0.4 |
+	var snd, env;
+	env = Env.linen(0.015, 1, 0.5, amp).kr(doneAction: 2);
+	snd = BPF.ar(Saw.ar(0), freq, 0.02);
+
+	snd = BLowShelf.ar(snd, 220, 0.81, 6);
+
+	snd = snd * env;
+	Out.ar(0, Splay.ar(snd));
+}).add;
+
+
+//from GitHub somewhere
 SynthDef(\marimba1, {
 	arg
 	// Standard values
@@ -365,7 +378,9 @@ SynthDef(\marimba1, {
 	Out.ar(out, Pan2.ar(snd, pan));
 }).add;
 
-SynthDef(\marimba2, {|baseFreq = 300, ln = 0.4, st=0.05, out=0, pos=0, ampl=0.5|
+
+//cred to Prof Petersen, lecture on 04/05
+SynthDef(\marimba2, {|baseFreq = 300, ln = 0.4, st=0.05, out=0, pos=0, loudness=0.5|
 	var pluck, rsntr, freqs, amps, ring;
 	freqs = [1,4,10] * baseFreq;
 
@@ -377,11 +392,11 @@ SynthDef(\marimba2, {|baseFreq = 300, ln = 0.4, st=0.05, out=0, pos=0, ampl=0.5|
 	rsntr = Klank.ar(`[freqs, amps * 0.45, ring], pluck);
 	DetectSilence.ar(rsntr, time:0.5, doneAction: 2);
 
-	Out.ar(out, Pan2.ar(ampl * ((pluck * 0.75) + rsntr), pos));
+	Out.ar(out, Pan2.ar(loudness * ((pluck * 0.75) + rsntr), pos));
 }).add;
 
 
-
+//low bass line, repeats often throughout song
 SynthDef(\bass_stringy, { | out = 0, ampl = 1, freq = 69.30, partials = #[324, 504, 666, 838], gate = 1  |
 	//carrier amplitudes
 	var amps = [1, 1, 1, 1].normalizeSum; //makes these ampls sum to 1
@@ -389,7 +404,7 @@ SynthDef(\bass_stringy, { | out = 0, ampl = 1, freq = 69.30, partials = #[324, 5
 	//the modulator
 	var mod = SinOsc.ar(freq, mul: 500);
 
-	//the 3 carriers
+	//the carriers
 	var car1 = SinOsc.ar(freq*1 + mod, mul: amps[0]) * LFNoise1.kr(10, 1);
 	var car2 = SinOsc.ar(freq*2 + mod, mul: amps[1]) * LFNoise1.kr(10, 1);
 	var car3 = SinOsc.ar(freq*3 + mod, mul: amps[2]) * LFNoise1.kr(10, 1);
@@ -408,25 +423,62 @@ SynthDef(\bass_stringy, { | out = 0, ampl = 1, freq = 69.30, partials = #[324, 5
 
 
 //trippy using multiple modulator FM
-SynthDef(\trippy, { |f=554.37, e=0.9, out=0, ampl=0.5|
-	var m1, m2, m3, carr;
+//sweep from low to high
+SynthDef(\trippy_up, { | f_low=277.18, f_high=311.13, e=0.9, out=0, ampl=0.5, sweep=1, sweep_dur=0.5, l, loudness=0.5 |
+	var m1, m2, m3, carr, env;
+
+	//remember: doesn't work in a Synth
+	/*switch (sweep,
+		-1,   { l = XLine.kr(f_high, f_low, sweep_dur); "-1".postln; },  //-1 is sweep high to low
+		0, { l = f_low; "0".postln;},  //0 is no sweep
+		1, { l = XLine.kr(f_low, f_high, sweep_dur); "1".postln;}   //1 is sweep low to high
+);*/
+
+	l = XLine.kr(f_low, f_high, sweep_dur);
 
 	//modulator 1
-	m1 = SinOsc.ar((f * 1) + (f / 250), mul: 700 * (17 * (8 - (e * f.log)) / (e * f.log).squared));
+	m1 = SinOsc.ar((l * 1) + (l / 250), mul: 700 * (17 * (8 - (e * l.log)) / (e * l.log).squared));
 
 	//modulator 2
-	m2 = SinOsc.ar((f * 4) + (f / 200), mul: 15 * (20 * (8 - (e * f.log)) / f));
+	m2 = SinOsc.ar((l * 4) + (l / 200), mul: 15 * (20 * (8 - (e * l.log)) / l));
 
 
 	//carrier, base freq with 2 modulators added
-	carr = SinOsc.ar(f + m1 + m2);
+	carr = SinOsc.ar(l + m1 + m2);
+
+	env = EnvGen.ar(Env.new([0, 1, 0], [0.5, 0.8], [\sin, 1, \sin]), doneAction: 2);
 
 	//syntactic sugar for panning
-	Out.ar(out, carr ! 2 * ampl);
+	Out.ar(out, carr * ampl * env * loudness ! 2);
 }).add;
 
 
-//trippy using multiple carrier FM (I like better)
+
+//trippy using multiple modulator FM
+//sweep from high to low
+SynthDef(\trippy_down, { | f_low=277.18, f_high=311.13, e=0.9, out=0, ampl=0.5, sweep=1, sweep_dur=0.5, l, loudness=0.5 |
+	var m1, m2, m3, carr, env;
+
+	l = XLine.kr(f_high, f_low, sweep_dur);
+
+	//modulator 1
+	m1 = SinOsc.ar((l * 1) + (l / 250), mul: 700 * (17 * (8 - (e * l.log)) / (e * l.log).squared));
+
+	//modulator 2
+	m2 = SinOsc.ar((l * 4) + (l / 200), mul: 15 * (20 * (8 - (e * l.log)) / l));
+
+
+	//carrier, base freq with 2 modulators added
+	carr = SinOsc.ar(l + m1 + m2);
+
+	env = EnvGen.ar(Env.new([0, 1, 0.8, 0], [0.3, 0.3, 2], [\sin, 1, \sin]), doneAction: 2);
+
+	//syntactic sugar for panning
+	Out.ar(out, carr * ampl * env * loudness ! 2);
+}).add;
+
+
+//trippy using multiple carrier FM (I like better) -- used this for repeated patterns throughout song
 SynthDef(\trippy2, { | out = 0, loudness = 0.2, freq = 554.37, gate = 1 |
 	//carrier amplitudes
 	var amps = [2, 1, 1, 0.5].normalizeSum; //makes these ampls sum to 1
@@ -448,6 +500,10 @@ SynthDef(\trippy2, { | out = 0, loudness = 0.2, freq = 554.37, gate = 1 |
 		s = HPF.ar(s, 250);
 	};
 
+	10.do {
+		s = LPF.ar(s, 2800);
+	};
+
 	env = EnvGen.kr(Env.adsr(0.2, 0.1, 1, 0.2, 1, \sin), doneAction: 2, gate: gate);
 
 	//adsr args: attacktime, decaytime, sustainlvl (fraction of peak lvl), releasetime, peaklevel, curve
@@ -456,9 +512,89 @@ SynthDef(\trippy2, { | out = 0, loudness = 0.2, freq = 554.37, gate = 1 |
 
 
 
+//fm piano
+SynthDef(\piano, {| f=60, e=0.9, loudness=1, gate=1 |
+	var m1, m2, c, env;
+
+	//modulator 1
+	m1 = SinOsc.ar((f * 1) + (f / 250), mul: 400 * (17 * (8 - (e * f.log)) / (e * f.log).squared));
+
+	//modulator 2
+	m2 = SinOsc.ar((f * 4) + (f / 200), mul: 400 * (20 * (8 - (e * f.log)) / f));
+
+	//carrier, base freq with 2 modulators added
+	c = SinOsc.ar(f + m1 + m2);//percussive env
+
+	env = EnvGen.kr(Env.adsr(0.2, 0.1, 1, 0.2, 1, \sin), doneAction: 2, gate: gate);
+
+	//syntactic sugar for panning
+	Out.ar(0, loudness*c*env ! 2);
+}).add;
+
+
+
+
+//attempt additive synthesis for wood stick claps at 4:42
+SynthDef(\wood_stick, { | out=0, freq = 52, loudness = 0.5, dur = 3.0, pan = 0.0, attackTime = 0.3, releaseTime = 0.9, gate = 1, freqs = #[420, 497, 563, 672, 845, 1005, 1262, 1491, 1670, 1670, 1670], amplSpect = #[-34.7, -38.8, -37.1, -37.5, -75.2, -76.9, -74.3, -72.4, -70.0, -70.0, -70.0] |
+	var numPartials, partialFreqNoises, partialAmplNoises;
+
+	//number of total partials we have
+	numPartials = freqs.size;
+
+	//fill an array with some LFNoise1 objects to slightly vary each of the partials' frequencies over time
+	partialFreqNoises = Array.fill(numPartials, { |i|
+		LFNoise1.kr(10, 5);
+	}
+	);
+
+	//fill yet another array with some more LFNoise1 objects to slightly vary each of the partials' amplitudes over time
+	//fill an array with some LFNoise1 objects to slightly vary each of the partials' frequencies over time
+	partialAmplNoises = Array.fill(numPartials, { |i|
+		LFNoise1.kr(10, 0.5); //multiplier of 2 sounds pretty good
+	}
+	);
+
+	//convert db to amplitudes
+	a = 10.pow(amplSpect / 20);
+
+	b = Pan2.ar( //pan to position (user-passed arg)
+		Mix( //mix down to single channel
+			SinOsc.ar(freq: freqs + partialFreqNoises, mul: a + partialAmplNoises),
+			pan));
+
+	n = WhiteNoise.ar();
+	10.do {
+		n = HPF.ar(n, 2000);
+	};
+
+	e = EnvGen.kr(Env.perc(0.01, 0.1, 1, \sin), doneAction: 2);
+
+	Out.ar(out, b + n * e * loudness);
+}).add;
+
+
+//soft simple synth
+SynthDef(\soft, { | loudness = 1, f = 300, gate=1 |
+	var env;
+
+	env = EnvGen.kr(Env.adsr(0.2, 0.1, 1, 0.2, 1, \sin), doneAction: 2, gate: gate);
+	s = loudness * FreeVerb.ar(SinOsc.ar(f) * env, 0.5, 0.6);
+
+    Out.ar(0, s ! 2);
+}).add;
+
 )
 
+//*********************END SYNTHDEFS*************************8
 
+
+
+
+
+
+
+
+//***************************BEGIN TESTING AREA/SANDBOX***********************
 Env.linen().plot;
 Env.perc(0.01, 0.3, 1, \sin).plot;
 
@@ -471,6 +607,8 @@ Synth(\kick);
 Synth(\bd);
 Synth(\kick2);
 Synth(\hat);
+Synth(\soft, [\freq, ~dflat2]);
+Synth(\sin);
 Synth(\ringkick);
 Synth(\marimba);
 Synth(\marimba1);
@@ -480,14 +618,24 @@ Synth(\maraca);
 Synth(\fady);
 Synth(\bass_stringy, [\freq, ~gflat1]);
 Synth(\marimba2, [\ampl, 0.1]);
-Synth(\trippy);
-t = Synth(\trippy2, [\freq, 830.61, \ampl, 0.05]);
-t.set(\gate, 0);
+Synth(\wood_stick, [\freqs, ~wood_stick_freqs, \amplSpect, ~wood_stick_ampls]);
+Synth(\wood_block, [\wdv, 400, \swing, 2]);
+Synth(\wood_stick);
+Synth(\piano, [\f, ~b4]);
+
+Synth(\soft, [\freq, ~b4]);
+Synth(\soft, [\freq, ~aflat4]);
+
+
+
+//sweep from dflat to eflat
+Synth(\trippy_up, [\f_low, ~dflat4, \f_high, ~eflat4, \sweep_dur, 1]);
+Synth(\trippy_down, [\f_low, ~dflat4, \f_high, ~eflat4, \sweep_dur, 0.6]);
+
 
 s = Server.local;
 b = Buffer.read(s, "andrea.mp3".resolveRelative, 44100 * 20); //conv from rel to abs path
 b.play;
-
 
 
 //from rhythmic to audio rate; the Mouse is controlling the average number of clicks per second, they are not evenly spaced!
@@ -499,16 +647,8 @@ b.play;
 { Saw.ar(Select.kr(Stepper.kr(Impulse.kr(MouseX.kr(1,40),0.1),0,0,7,1),[75,63,67,72,55,62,63,60].midicps),0.1) }.play
 
 
-/*play {BBandStop.ar(HPF.ar(BPF.ar(PinkNoise.ar(), 25, 0.1) ! 2, 150), freq: 25, bw: 10)};
-
-play {BPF.ar(PinkNoise.ar(), 25, 0.1) ! 2};
-play {HPF.ar(BPF.ar(PinkNoise.ar(), 25, 0.1) ! 2, 150)};*/
-
-
 ~fady_aflat_freqs_v2 = [52, 81, 162, 247, 280, 332, 419, 496, 559, 666, 830, 52, 81, 162];
 ~fady_aflat_ampls_v2 = #[-66.5, -63.3, -65.3, -34.4, -31.7, -29.2, -33.5, -35, -37.8, -36.7, -35.5, -66.5, -63.3, -65.3];
-
-
 
 
 Synth(\fady_add_aflat, [\freqs, ~fady_aflat_freqs_v2, \amplSpect, ~fady_aflat_ampls_v2]);
@@ -516,18 +656,35 @@ Synth(\fady_add_aflat, [\freqs, ~fady_aflat_freqs, \amplSpect, ~fady_aflat_ampls
 Synth(\fady_add_aflat, [\freqs, ~fady_gflat_freqs, \amplSpect, ~fady_gflat_ampls]);
 
 
-
-
 {FreeVerb.ar(SinOsc.ar(200) * Env.perc(0.05, 0.15, 1, \sine).kr(), 0.5, 0.6) * Env.linen(sustainTime: 0.5, releaseTime: 0.15).kr(2) ! 2}.play;
+//*****************************END TESTING AREA/SANDBOX************************
 
 
-//PLAY THE COMPOSITION -- ANDREA BY BAD BUNNY, MODELED BY NOAH S WEINER
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//************PLAY THE COMPOSITION -- ANDREA BY BAD BUNNY, MODELED BY NOAH S WEINER*******
 (
 ~bpm = 103; // Andrea runs at 103 bpm
 ~tc = TempoClock(~bpm / 60); // make a new tempoclock at tempo 103 bpm, but need to get beats per second
 
 
-//partials and stuff for additive synthesis
+//******Partials and stuff for additive synthesis
 ~fady_e_freqs = [70, 128, 183, 220, 276, 329, 370, 439, 556, 660, 832, 989, 1119, 1660];
 ~fady_e_ampls = [-66.9, -61, -37.4, -28, -29.8, -25.9, -37.9, -36.5, -40.8, -35.5, -62, -61.4, -62.5, -71.1];
 
@@ -538,22 +695,43 @@ Synth(\fady_add_aflat, [\freqs, ~fady_gflat_freqs, \amplSpect, ~fady_gflat_ampls
 ~fady_aflat_freqs = [53, 82, 106, 280, 334, 420, 497, 563, 672, 845, 1005, 1262, 1491, 1670];
 ~fady_aflat_ampls = [-64.1, -68.8, -28.5, -30.7, -32.6, -34.7, -38.8, -37.1, -37.5, -75.2, -76.9, -74.3, -72.4];
 
-//other info
+~wood_stick_freqs = [308, 352, 458, 516, 558, 665, 611, 715, 1691, 2257, 3226];
+~wood_stick_ampls = [-33.2, -25.6, -27.3, -33.7, -21.6, -21.2, -29.8, -25.7, -23.3, -23.6, -20.9];
+
+//OTHER INFO******
+
+//note freqs
+~aflat0 = 25.96;
 ~bflat0 = 29.14;
+~dflat0 = 17.32;
 ~d0 = 18.35;
 ~eflat0 = 19.45;
 ~e0 = 20.60;
 ~gflat0 = 23.12;
 ~dflat1 = 34.65;
+~dflat2 = ~dflat1 * 2;
+~dflat3 = ~dflat2 * 2;
+~dflat4 = ~dflat2 * 4;
+~eflat3 = ~eflat0 * 8;
+~eflat4 = ~eflat0 * 16;
+~a3 = 220;
+~b4 = 246.94;
 ~gflat1 = 46.25;
 ~aflat1 = 51.91;
 ~dflat2 = 69.30;
+~gflat4 = ~gflat1 * 4;
+~aflat4 = ~aflat1 * 4;
 ~dflat5 = ~dflat2 * 8;
 ~aflat5 = ~aflat1 * 16;
 ~gflat5 = ~gflat1 * 16;
+~eflat5 = ~eflat0 * 32;
 ~e5 = ~e0 * 32;
+~b5 = 987.77;
+~dflat6 = ~dflat5 * 2;
+~eflat6 = ~eflat5 * 2;
+~e6 = ~e5 * 2;
 
-
+//**********
 
 
 //background synth note seq: 311.13 (Eflat4), 329.63 (E4), 415.30 (Aflat4), 311.13, 329.63, 277.18 (Dflat4),... repeats
@@ -576,12 +754,17 @@ Synth(\fady_add_aflat, [\freqs, ~fady_gflat_freqs, \amplSpect, ~fady_gflat_ampls
 	Pbind(\instrument, \bass_stringy, \freq, Pseq([note1, Rest(), note1, Rest(), note2, Rest(), note3, Rest(), note1, Rest(), note1, Rest(), note1, Rest()], 1), \ampl, 0.2, \dur, Pseq(durs, 1));
 };
 
+//bass note seq towards end of song
+~bass_later = { | note=60 |
+	//the seq
+	Pbind(\instrument, \bass_stringy, \freq, Pseq([note, Rest(), note, Rest(), note, Rest(), note]), \ampl, 1, \dur, Pseq([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], 1));
+};
 
-//trippy note seq: dflat - aflat - gflat - e - gflat - dflat
-~trippy = { | note1, note2, note3, note4, note5, note6 |
+//trippy synth sequence generator
+~trippy = { | note1, note2, note3, note4=200, note5=200, note6=200, half=false |
 	t = [0.5, 1.5, 0.5, 1, 1, 2];
 	t = t + 0.5;
-	l = 0.25;
+	l = 0.1;
 
 	a = Pbind(\instrument, \trippy2, \freq, Pseq([note1], 1), \loudness, l, \dur, Pseq([t[0]], 1));
 	b = Pbind(\instrument, \trippy2, \freq, Pseq([note2], 1), \loudness, l, \dur, Pseq([t[1]], 1));
@@ -590,9 +773,29 @@ Synth(\fady_add_aflat, [\freqs, ~fady_gflat_freqs, \amplSpect, ~fady_gflat_ampls
 	e = Pbind(\instrument, \trippy2, \freq, Pseq([note5], 1), \loudness, l, \dur, Pseq([t[4]], 1));
 	f = Pbind(\instrument, \trippy2, \freq, Pseq([note6], 1), \loudness, l, \dur, Pseq([t[5]], 1));
 
-	//want some overlap
-	Ptpar([0, a, 0.5, b, 2, c, 2.5, d, 3.5, e, 4.5, f], 1);
+	//allow to cut off second half of seq
+	if ( half == false,
+    { Ptpar([0, a, 0.5, b, 2, c, 2.5, d, 3.5, e, 4.5, f], 1); },  //want some overlap
+		{ 	c = Pbind(\instrument, \trippy2, \freq, Pseq([note3], 1), \loudness, l, \dur, Pseq([0.3], 1));
+			Ptpar([0, a, 0.5, b, 2, c], 1); }
+)
 };
+
+
+~fm_piano_chord = { | note1=60, note2=100 |
+	var loud = 0.1;
+
+	//fm piano
+	a = Pbind(\instrument, \piano, \f, note1, \loudness, loud, \dur, Pseq([2], 1));
+	b = Pbind(\instrument, \piano, \f, note2, \loudness, loud, \dur, Pseq([2], 1));
+
+	//soft sine
+	c = Pbind(\instrument, \soft, \f, note1, \loudness, loud*2, \dur, Pseq([2], 1));
+	d = Pbind(\instrument, \soft, \f, note2, \loudness, loud*2, \dur, Pseq([2], 1));
+
+	Ptpar([0, a, 0, b, 0, c, 0, d], 1);
+};
+
 
 
 //kick
@@ -602,105 +805,130 @@ k = Pbind(\instrument, \kick, \ampl, 0.3, \freq, Pseq([75], 1));
 s = Pbind(\instrument, \sd, \ampl, 0.3, \freq, Pseq([250], 1));
 
 //wood block
-w = Pbind(\instrument, \wood_block, \ampl, 0.5, \freq, Pseq([850], 1));
+w = Pbind(\instrument, \wood_block, \loudness, 0.1, \freq, Pseq([850], 1), \wdv, Pseq([400], 1), \swing, Pseq([2], 1));
+
+//marimba - dflat
+m = Pbind(\instrument, \marimba2, \loudness, 0.1, \baseFreq, Pseq([~dflat5], 1));
+
+
+//really harsh wood block
+~harsh_wood = Pbind(\instrument, \wood_block, \loudness, 0.1, \ampl, 0.6, \freq, Pseq([700], 1), \wdv, Pseq([400], 1), \swing, Pseq([2], 1));
+
+//try to make wood sticks?
+~wood_stick = Pbind(\instrument, \wood_stick, \loudness, 0.05, \freqs, ~wood_stick_freqs, \amplSpect, ~wood_stick_ampls, \freq, Pseq([800], 1));
+
+
+//combine some sounds to make better wood stick hit sound
+~wood_stick_hits = Ptpar([0, ~wood_stick, 0, w, 0.3, ~wood_stick, 0.3, w, 0.7, ~wood_stick, 0.7, w]);
+
+
+
+//weird FM horn things
+h = Pbind(\instrument, \trippy_up, \loudness, 0.3, \sweep_dur, Pseq([1], 1));
+
+i = Pbind(\instrument, \trippy_down, \loudness, 0.3, \sweep_dur, Pseq([0.6], 1));
+
+
+//fady convenience method to get a Pbind
+~fady = { | dur=9.5, loudness = 0.5, freqs = #[53, 82, 106, 280, 334, 420, 497, 563, 672, 845, 1005, 1262, 1491, 1670], amplSpect = #[-64.1, -68.8, -28.5, -30.7, -32.6, -34.7, -38.8, -37.1, -37.5, -75.2, -76.9, -74.3, -72.4] |
+	Pbind(\instrument, \fady, \freqs, freqs, \amplSpect, amplSpect, \loudness, loudness, \dur, Pseq([dur], 1));
+};
+
 
 //fady synths
-a = Pbind(\instrument, \fady, \freqs, [~fady_aflat_freqs], \amplSpect, [~fady_aflat_ampls], \loudness, 0.1, \dur, Pseq([9.5], 1)); //this one is aflat
-e = Pbind(\instrument, \fady, \freqs, [~fady_e_freqs], \amplSpect, [~fady_e_ampls], \loudness, 0.1, \dur, Pseq([9.5], 1)); //this one is e
-g = Pbind(\instrument, \fady, \freqs, [~fady_gflat_freqs], \amplSpect, [~fady_gflat_ampls], \loudness, 0.1, \dur, Pseq([9.5], 1)); //this one is gflat
+a = ~fady.value(9.5, 0.1, [~fady_aflat_freqs], [~fady_aflat_ampls]); //aflat
+e = ~fady.value(9.5, 0.1, [~fady_e_freqs], [~fady_e_ampls]); //e
+g = ~fady.value(9.5, 0.1, [~fady_gflat_freqs], [~fady_gflat_ampls]); //gflat
+
+//a shortened aflat fady
+x = ~fady.value(7, 0.1, [~fady_aflat_freqs], [~fady_aflat_ampls]);
+y = ~fady.value(8, 0.1, [~fady_aflat_freqs], [~fady_aflat_ampls]);
 
 
-//use Pattern class
-~pat1 = Ptpar([0, ~baying.value(note1: 0.5, rest1: 0.6, note2: 0.35, rest2: 0.1), 0, k, 0.75, s, 1.5, s, 1, k, 2, k, 2.5, s, 3, k, 3.5, w, 3.75, w]);
-~pat2 = Ptpar([0, ~baying.value(), 0, k, 0.75, s, 1.5, s, 1, k, 2, k, 2.5, s, 3, k, 3.5, w, 3.75, w]);
-
-//fady synth pattern repeat throughout song
+//fady synth pattern repeats throughout song
 ~fady_pat = Ptpar([0, a, 8, e, 16, g, 24, e, 28, a]);
+~fady_pat_2 = Ptpar([0, a, 8, e, 16, g, 24, x]); //end cut off
+~fady_pat_3 = Ptpar([0, a, 8, e, 16, g, 24, y, 28, a]);
+
+~drum_seq = Ptpar([0, k, 0.75, s, 1.5, s, 1, k, 2, k, 2.5, s, 3, k, 3.5, w, 3.75, w]);
+
+~drum_seq_marimb = Ptpar([0, k, 0.75, s, 1.5, s, 1, k, 2, k, 2.5, s, 3, k, 3.5, w, 3.75, w, 0.5, m, 1.5, m, 2.5, m, 3.5, m]);
+
+//these include the drum kit and wood block elements
+~baying_seq_1 = ~baying.value(note1: 0.5, rest1: 0.6, note2: 0.35, rest2: 0.1);
+~baying_seq_2 = ~baying.value();
 
 //baying sequence rep throughout song: Aflat4 (415.30), E4 (329.63), Gflat4 (369.99)
-~baying_seq = Ptpar([0, ~pat1, 4, ~pat2]);
+~baying_seq = Ptpar([0, ~baying_seq_1, 4, ~baying_seq_2]);
 
 //bass seq
 ~bass_seq = Pseq([~bass.value(), ~bass.value(~gflat1, ~dflat0, ~e0), ~bass.value(~aflat1, ~eflat0, ~gflat0), ~bass.value(~gflat1, ~bflat0, ~e0)], 1);
 
-//trippy seq
+//bass seq towards end of song
+~bass_seq_later = Pbind(\instrument, \bass_stringy, \freq, Pseq([~aflat1, Rest(), ~aflat1, Rest(), ~dflat2, Rest(), ~dflat2]), \ampl, 1, \dur, Pseq([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], 1));
+~bass_seq_later_2 = Pseq([~bass_later.value(~gflat0)], 1);
+
+//trippy note seq 1: dflat - aflat - gflat - e - gflat - dflat
 ~trippy_seq_1 = ~trippy.value(~dflat5, ~aflat5, ~gflat5, ~e5, ~gflat5, ~dflat5);
-//~trippy_seq_2
 
-~tc.sched(64, {~baying_seq.play(~tc); 8});
-~tc.sched(0, {~fady_pat.play(~tc); 32});
-~tc.sched(32, {~bass_seq.play(~tc); 32});
-~tc.sched(35.5, {~trippy_seq_1.play(~tc);});
+//trippy 2: e - dflat - b - aflat - b - aflat
+~trippy_seq_2 = ~trippy.value(~e5, ~dflat6, ~b5, ~aflat5, ~b5, ~aflat5);
 
-//g.play;
-/*~bass_seq.play(~tc);
-~met = Pbind(\instrument, \world, \ampl, 0.1);
-//~met.play(~tc);
-~tc.sched(3.5, {~trippy_seq_1.play(~tc);});*/
+//trippy 3: gflat - eflat - b - aflat - b - dflat
+~trippy_seq_3 = ~trippy.value(~gflat5, ~eflat6, ~b5, ~aflat5, ~b5, ~dflat6);
+
+//trippy 4: aflat - e - dflat - b - dflat
+~trippy_seq_4 = ~trippy.value(~aflat5, ~e6, ~dflat6, half: true);
+~trippy_seq_4_v2 = ~trippy.value(~aflat5, ~e6, ~dflat6, ~b5, ~dflat6, Rest());
+
+~trippy_full = Ptpar([0.5, ~trippy_seq_1, 8.5, ~trippy_seq_2, 16.5, ~trippy_seq_3, 24.5, ~trippy_seq_4]);
+~trippy_full_uncut = Ptpar([0.5, ~trippy_seq_1, 8.5, ~trippy_seq_2, 16.5, ~trippy_seq_3, 24.5, ~trippy_seq_4_v2]);
+
+
+//horn-type blowing thing
+~horn = Ptpar([0, h, 2, i]);
+
+~wood_block_jingle = Ptpar([0, ~harsh_wood, 0.3, ~harsh_wood, 0.6, ~harsh_wood], 1);
+
+~piano_line = Ptpar([0, ~fm_piano_chord.value(~b4, ~aflat4), 4, ~fm_piano_chord.value(~b4, ~aflat4), 8, ~fm_piano_chord.value(~gflat4, ~a3), 12, ~fm_piano_chord.value(~gflat4, ~a3), 16, ~fm_piano_chord.value(~b4, ~eflat4), 20, ~fm_piano_chord.value(~b4, ~eflat4), 24, ~fm_piano_chord.value(~gflat4, ~a3), 28, ~fm_piano_chord.value(~gflat4, ~a3)], 1);
+
+
+
+
+//******Piece song together
+~bar = 8;
+~chunk = 64;
+//32
+~intro = Ptpar([~bar*0, ~fady_pat, ~bar*4, ~fady_pat_2, ~bar*4, ~bass_seq, ~bar*4 + 3, ~trippy_full]);
+
+//32
+~verse1 = Ptpar([~bar*0, ~fady_pat, ~bar*0, ~drum_seq, ~bar*0.5, ~drum_seq, ~bar*1, ~drum_seq, ~bar*1.5, ~drum_seq, ~bar*2, ~drum_seq, ~bar*2.5, ~drum_seq, ~bar*3, ~drum_seq, ~bar*3.5, ~drum_seq, 3, ~trippy_full_uncut]);
+
+//32
+~verse2 = Ptpar([~bar*0, ~fady_pat, ~bar*0, ~drum_seq, ~bar*0.5, ~drum_seq, ~bar*1, ~drum_seq, ~bar*1.5, ~drum_seq, ~bar*2, ~drum_seq, ~bar*2.5, ~drum_seq, ~bar*3, ~drum_seq, ~bar*3.5, ~drum_seq, 0, ~baying_seq, ~bar, ~baying_seq, ~bar*2, ~baying_seq, ~bar*3, ~baying_seq]);
+
+//32
+~verse3 = Ptpar([~bar*0, ~bass_seq, ~bar*0, ~fady_pat, ~bar*0, ~drum_seq, ~bar*0.5, ~drum_seq, ~bar*1, ~drum_seq, ~bar*1.5, ~drum_seq, ~bar*2, ~drum_seq, ~bar*2.5, ~drum_seq, ~bar*3, ~drum_seq, ~bar*3.5, ~drum_seq, 0, ~baying_seq, ~bar, ~baying_seq, ~bar*2, ~baying_seq, ~bar*3, ~baying_seq]);
+
+
+
+~verse4 = Ptpar([~bar*0, ~fady_pat, ~bar*0, ~drum_seq, ~bar*0.5, ~drum_seq, ~bar*1, ~drum_seq, ~bar*1.5, ~drum_seq, ~bar*2, ~drum_seq, ~bar*2.5, ~drum_seq, ~bar*3, ~drum_seq, ~bar*3.5, ~drum_seq, 0, ~baying_seq, ~bar, ~baying_seq, ~bar*2, ~baying_seq, ~bar*3, ~baying_seq, ~bar*4, ~bass_seq]);
+
+
+~verse5 = Ptpar([~bar*0, ~fady_pat, ~bar*4, ~fady_pat_2, ~bar*4, ~bass_seq]);
+
+
+~verse_horn = Ptpar([0, ~horn, 1, ~drum_seq, 5, ~drum_seq, 9, ~drum_seq_marimb, 13, ~drum_seq_marimb, 17, ~drum_seq_marimb, 21, ~drum_seq, 25, ~drum_seq, 29, ~drum_seq_marimb, 2.5, ~piano_line]);
+
+
+~verse_wood_stick = Ptpar([0, ~wood_stick_hits, 1.5, ~bass_seq_later, 2, ~drum_seq_marimb, 3.5, ~bass_seq_later, 6, ~drum_seq, 10, ~drum_seq_marimb, 14, ~drum_seq, 18, ~drum_seq_marimb, 22, ~drum_seq, 26, ~drum_seq_marimb, 30, ~drum_seq, 5.5, ~bass_seq_later, 7.5, ~bass_seq_later, 10, ~bass_later.value(~gflat0), 12, ~bass_later.value(~gflat0), 14, ~bass_later.value(~gflat0), 16, ~bass_later.value(~gflat0), 18, ~bass_later.value(~aflat0), 20, ~bass_later.value(~aflat0), 22, ~bass_later.value(~aflat0), 24, ~bass_later.value(~aflat0), 26, ~bass_later.value(~gflat0), 28, ~bass_later.value(~gflat0), 30, ~bass_later.value(~gflat0), 32, ~bass_later.value(~gflat0), 4, ~piano_line, 16, ~wood_block_jingle, 17, ~wood_block_jingle]);
+
+~verse_closing = Ptpar([~bar*0, ~fady_pat, ~bar*4, ~fady_pat_2, ~bar*4, ~bass_seq, ~bar*4 + 3, ~trippy_full, 0, ~drum_seq_marimb, 4, ~drum_seq_marimb, 8, ~drum_seq_marimb, 12, ~drum_seq_marimb, 16, ~drum_seq_marimb, 20, ~drum_seq_marimb, 24, ~drum_seq_marimb, 28, ~drum_seq_marimb]);
+
+
+
+//*******Play the whole song!!
+~full_song = Ptpar([0, ~intro, 64, ~verse1, 32+64, ~verse2, 128, ~verse3, 160, ~verse4, 192, ~verse5, 260, ~verse_horn, 295, ~verse_wood_stick, 329, ~verse_closing]).play(~tc);
 )
 
-p = Pmono(\trippy2, \dur, Pseq([1, 1], 1), \freq, Pseq([100, 200], 1)).play
-
-
-~s = Server.local;
-~b = Buffer.read(s, "andrea.mp3".resolveRelative, 44100 * 18); //conv from rel to abs path
-~b.play;
-
-(
-SynthDef("fm1", { arg bus = 0, freq = 440, carPartial = 1, modPartial = 1, index = 3, mul = 0.05;
-
-    // index values usually are between 0 and 24
-    // carPartial :: modPartial => car/mod ratio
-
-    var mod;
-    var car;
-
-    mod = SinOsc.ar(
-        freq * modPartial,
-        0,
-        freq * index * LFNoise1.kr(5.reciprocal).abs
-    );
-
-    car = SinOsc.ar(
-        (freq * carPartial) + mod,
-        0,
-        mul
-    );
-
-    Out.ar(
-        bus,
-        car
-    )
-}).add;
-)
-
-(
-Synth("fm1", [\bus, 0, \freq, 440, \carPartial, 1, \modPartial, 2.4]);
-Synth("fm1", [\bus, 1, \freq, 442, \carPartial, 1, \modPartial, 2.401]);
-)
-
-(
-s.queryAllNodes;
-)
-
-
-
-(
-SynthDef(\trig_demo, { |out, freq = 440, gate = 1, t_trig = 1|    // t_trig here
-    var    env = Decay2.kr(t_trig, 0.01, 0.1),
-        sig = SinOsc.ar(freq, 0, env)
-            * Linen.kr(gate, 0.01, 0.1, 0.1, doneAction: Done.freeSelf);
-    Out.ar(out, sig ! 2)
-}).add;
-)
-
-(
-p = Pmono(\trig_demo,
-    \freq, Pexprand(200, 800, inf),
-    \trig, 1,    // note that this is NOT t_trig -- just \trig
-    \delta, 0.125
-).play;
-)
-
-
-p.stop;
+//***************************END PROJECT CODE*******************************
